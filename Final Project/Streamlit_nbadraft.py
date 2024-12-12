@@ -15,13 +15,35 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 import joblib
+import requests
+import os
 
 # ===============================
 # 1. 加载模型和标准化器
 # ===============================
-# 加载预训练的随机森林模型和标准化器
-model = joblib.load("best_rf_model.pkl")  # 替换为实际模型路径
-scaler = joblib.load("scaler.pkl")       # 替换为实际标准化器路径
+
+# 从 GitHub 下载文件
+def download_file(url, filename):
+    response = requests.get(url)
+    with open(filename, 'wb') as f:
+        f.write(response.content)
+
+# 检查并下载模型文件
+if not os.path.exists("best_rf_model.pkl"):
+    download_file(
+        "https://github.com/Yshen-11/DUKE_XAI/raw/main/Final%20Project/best_rf_model.pkl", 
+        "best_rf_model.pkl"
+    )
+
+if not os.path.exists("scaler.pkl"):
+    download_file(
+        "https://github.com/Yshen-11/DUKE_XAI/raw/main/Final%20Project/scaler.pkl", 
+        "scaler.pkl"
+    )
+
+# 加载模型和标准化器
+model = joblib.load("best_rf_model.pkl")
+scaler = joblib.load("scaler.pkl")
 
 # 定义特征名称
 features = ['Yrs', 'G', 'PPG', 'RPG', 'APG', 'WS', 'BPM', 'MPG',
