@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Draft Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input, select {
+            margin: 5px 0;
+            padding: 8px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+        }
+        button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #333;
+        }
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NBA Draft Prediction</h1>
+        <form id="prediction-form">
+            <!-- Input Fields -->
+            <div class="input-group">
+                <label for="College">College</label>
+                <select id="College">
+                    <option value="Unknown">Unknown</option>
+                    <option value="Alabama">Alabama</option>
+                    <option value="Arizona">Arizona</option>
+                    <option value="Arkansas">Arkansas</option>
+                    <option value="Auburn">Auburn</option>
+                    <option value="Baylor">Baylor</option>
+                    <option value="California">California</option>
+                    <option value="Cincinnati">Cincinnati</option>
+                    <option value="Connecticut">Connecticut</option>
+                    <option value="Duke">Duke</option>
+                    <option value="Florida">Florida</option>
+                    <option value="Florida State">Florida State</option>
+                    <option value="Gonzaga">Gonzaga</option>
+                    <option value="Indiana">Indiana</option>
+                    <option value="Iowa">Iowa</option>
+                    <option value="Kansas">Kansas</option>
+                    <option value="Kentucky">Kentucky</option>
+                    <option value="Louisville">Louisville</option>
+                    <option value="LSU">LSU</option>
+                    <option value="Michigan">Michigan</option>
+                    <option value="Michigan State">Michigan State</option>
+                    <option value="North Carolina">North Carolina</option>
+                    <option value="Notre Dame">Notre Dame</option>
+                    <option value="Ohio State">Ohio State</option>
+                    <option value="Oklahoma">Oklahoma</option>
+                    <option value="Oregon">Oregon</option>
+                    <option value="Purdue">Purdue</option>
+                    <option value="Stanford">Stanford</option>
+                    <option value="Syracuse">Syracuse</option>
+                    <option value="Tennessee">Tennessee</option>
+                    <option value="Texas">Texas</option>
+                    <option value="Texas A&M">Texas A&M</option>
+                    <option value="UCLA">UCLA</option>
+                    <option value="USC">USC</option>
+                    <option value="Villanova">Villanova</option>
+                    <option value="Virginia">Virginia</option>
+                    <option value="West Virginia">West Virginia</option>
+                    <option value="Wisconsin">Wisconsin</option>
+                    <option value="Xavier">Xavier</option>
+                    <!-- Add more NCAA Division I schools as necessary -->
+                </select>                
+                <small>College background (e.g., Duke, Kentucky, UCLA).</small>
+            </div>
+            <div class="input-group">
+                <label for="MPG">MPG (Minutes Per Game)</label>
+                <input type="number" id="MPG" placeholder="Enter MPG">
+                <small>Average minutes per game (e.g., 32.5 means 32.5 minutes per game).</small>
+            </div>
+            <div class="input-group">
+                <label for="PPG">PPG (Points Per Game)</label>
+                <input type="number" id="PPG" placeholder="Enter PPG">
+                <small>Average points per game (e.g., 18.2 means 18.2 points per game).</small>
+            </div>
+            <div class="input-group">
+                <label for="RPG">RPG (Rebounds Per Game)</label>
+                <input type="number" id="RPG" placeholder="Enter RPG">
+                <small>Average rebounds per game (e.g., 8.5 means 8.5 rebounds per game).</small>
+            </div>
+            <div class="input-group">
+                <label for="APG">APG (Assists Per Game)</label>
+                <input type="number" id="APG" placeholder="Enter APG">
+                <small>Average assists per game (e.g., 5.1 means 5.1 assists per game).</small>
+            </div>
+            <button type="button" onclick="submitPrediction()">Predict</button>
+        </form>
+        <div class="result" id="result"></div>
+        <canvas id="shap-chart" width="400" height="400"></canvas>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Submit prediction
+        function submitPrediction() {
+            const inputData = {
+                "College": document.getElementById("College").value,
+                "MPG": parseFloat(document.getElementById("MPG").value || 0),
+                "PPG": parseFloat(document.getElementById("PPG").value || 0),
+                "RPG": parseFloat(document.getElementById("RPG").value || 0),
+                "APG": parseFloat(document.getElementById("APG").value || 0)
+            };
+
+            // Send POST request to the backend
+            fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(inputData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("result").innerText = `Error: ${data.error}`;
+                } else {
+                    document.getElementById("result").innerText = 
+                        `Predicted Draft Position: ${data.draft_position}`;
+                    
+                    // Render feature importance chart
+                    renderShapChart(data.shap_values);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById("result").innerText = "An error occurred.";
+            });
+        }
+
+        // Render feature importance chart
+        function renderShapChart(shapValues) {
+            const ctx = document.getElementById("shap-chart").getContext("2d");
+            const labels = shapValues.map(item => item.feature);
+            const values = shapValues.map(item => item.importance);
+
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Feature Importance",
+                        data: values,
+                        backgroundColor: "rgba(75, 192, 192, 0.2)",
+                        borderColor: "rgba(75, 192, 192, 1)",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
