@@ -1,6 +1,4 @@
-Here is the complete `README.md` file entirely in Markdown format:
 
-```markdown
 # **NBA Draft Prediction Project**
 
 ## **Project Overview**
